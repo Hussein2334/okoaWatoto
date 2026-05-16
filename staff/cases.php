@@ -1,21 +1,19 @@
 <?php
-// admin/cases.php
+// staff/cases.php
 $page_title = 'Manage Cases';
 
 // Start output buffering to prevent header errors
 ob_start();
 
-require_once '../config/database.php';
+require_once __DIR__ . '/../config/database.php';
 
-// Check if user is logged in and is admin/staff
-if (!isLoggedIn()) {
-    ob_end_clean();
+// Check if user is logged in and is staff
+if (!isset($_SESSION['user_id'])) {
     header("Location: ../login.php");
     exit();
 }
 
-if ($_SESSION['user_role'] !== 'admin' && $_SESSION['user_role'] !== 'staff') {
-    ob_end_clean();
+if ($_SESSION['user_role'] !== 'staff') {
     header("Location: ../index.php");
     exit();
 }
@@ -35,14 +33,13 @@ if (isset($_POST['update_missing_status'])) {
             logActivity(
                 "Missing Case Status Updated",
                 "update",
-                "User {$_SESSION['user_name']} changed case {$old_data['case_number']} status from {$old_data['status']} to {$new_status}",
+                "Staff {$_SESSION['user_name']} changed case {$old_data['case_number']} status from {$old_data['status']} to {$new_status}",
                 ['old_status' => $old_data['status'], 'case_number' => $old_data['case_number']],
                 ['new_status' => $new_status, 'updated_by' => $_SESSION['user_name']]
             );
         }
         $_SESSION['success_message'] = "Missing case status updated successfully";
     }
-    ob_end_clean();
     header("Location: cases.php?tab=missing");
     exit();
 }
@@ -62,14 +59,13 @@ if (isset($_POST['update_found_status'])) {
             logActivity(
                 "Found Case Status Updated",
                 "update",
-                "User {$_SESSION['user_name']} changed found case {$old_data['case_number']} status from {$old_data['status']} to {$new_status}",
+                "Staff {$_SESSION['user_name']} changed found case {$old_data['case_number']} status from {$old_data['status']} to {$new_status}",
                 ['old_status' => $old_data['status'], 'case_number' => $old_data['case_number']],
                 ['new_status' => $new_status, 'updated_by' => $_SESSION['user_name']]
             );
         }
         $_SESSION['success_message'] = "Found case status updated successfully";
     }
-    ob_end_clean();
     header("Location: cases.php?tab=found");
     exit();
 }
@@ -88,14 +84,13 @@ if (isset($_GET['delete_missing'])) {
             logActivity(
                 "Missing Case Deleted",
                 "delete",
-                "User {$_SESSION['user_name']} deleted missing case {$case['case_number']}",
+                "Staff {$_SESSION['user_name']} deleted missing case {$case['case_number']}",
                 $case,
                 null
             );
         }
         $_SESSION['success_message'] = "Missing case deleted successfully";
     }
-    ob_end_clean();
     header("Location: cases.php?tab=missing");
     exit();
 }
@@ -114,14 +109,13 @@ if (isset($_GET['delete_found'])) {
             logActivity(
                 "Found Case Deleted",
                 "delete",
-                "User {$_SESSION['user_name']} deleted found case {$case['case_number']}",
+                "Staff {$_SESSION['user_name']} deleted found case {$case['case_number']}",
                 $case,
                 null
             );
         }
         $_SESSION['success_message'] = "Found case deleted successfully";
     }
-    ob_end_clean();
     header("Location: cases.php?tab=found");
     exit();
 }
@@ -230,10 +224,9 @@ $total_awaiting_count = $pdo->query("SELECT COUNT(*) as total FROM found_reports
 $total_reunited_found_count = $pdo->query("SELECT COUNT(*) as total FROM found_reports WHERE status = 'Reunited'")->fetch()['total'];
 $total_in_care_count = $pdo->query("SELECT COUNT(*) as total FROM found_reports WHERE status = 'In Care'")->fetch()['total'];
 
-// Clear buffer and include header and sidebar
+// Clear output buffer and include header
 ob_end_clean();
-require_once 'includes/admin-header.php';
-require_once 'includes/admin-sidebar.php';
+require_once __DIR__ . '/includes/staff-header.php';
 ?>
 
 <!-- Dashboard Header -->
@@ -314,7 +307,7 @@ require_once 'includes/admin-sidebar.php';
         <input type="hidden" name="tab" value="missing">
         <input type="text" name="search_missing" placeholder="Search missing cases by name, case number, or location..." 
                value="<?php echo htmlspecialchars($search_missing); ?>"
-               class="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+               class="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg">
         <button type="submit" class="bg-primary text-white px-3 py-1.5 rounded-lg text-sm">Search</button>
         <?php if(!empty($search_missing) || $status_missing_filter != 'all'): ?>
         <a href="?tab=missing" class="bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-sm">Clear</a>
@@ -460,7 +453,7 @@ require_once 'includes/admin-sidebar.php';
         <input type="hidden" name="tab" value="found">
         <input type="text" name="search_found" placeholder="Search found cases by name, case number, or location..." 
                value="<?php echo htmlspecialchars($search_found); ?>"
-               class="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+               class="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded-lg">
         <button type="submit" class="bg-primary text-white px-3 py-1.5 rounded-lg text-sm">Search</button>
         <?php if(!empty($search_found) || $status_found_filter != 'all'): ?>
         <a href="?tab=found" class="bg-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-sm">Clear</a>
@@ -597,7 +590,7 @@ require_once 'includes/admin-sidebar.php';
         });
     });
     
-    // SweetAlert for success message
+    // Success message
     <?php if(isset($_SESSION['success_message'])): ?>
     Swal.fire({
         icon: 'success',
@@ -610,4 +603,4 @@ require_once 'includes/admin-sidebar.php';
     <?php unset($_SESSION['success_message']); endif; ?>
 </script>
 
-<?php require_once 'includes/admin-footer.php'; ?>
+<?php require_once __DIR__ . '/includes/staff-footer.php'; ?>

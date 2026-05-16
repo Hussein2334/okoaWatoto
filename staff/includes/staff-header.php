@@ -1,20 +1,22 @@
 <?php
-// admin/includes/admin-header.php
-require_once __DIR__ . '/../../config/database.php';
+// staff/includes/staff-header.php
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
 
-// Check authentication - redirect to login if not logged in
+// Check authentication for staff
 if (!isset($_SESSION['user_id'])) {
-    header("Location: " . BASE_URL . "login.php");
+    header("Location: /okoaWatoto/login.php");
     exit();
 }
 
-// Check if user is admin
-if ($_SESSION['user_role'] !== 'admin') {
-    header("Location: " . BASE_URL . "index.php");
+// Only staff role can access
+if ($_SESSION['user_role'] !== 'staff') {
+    header("Location: /okoaWatoto/index.php");
     exit();
 }
 
-$page_title = $page_title ?? 'Admin Dashboard';
+$page_title = $page_title ?? 'Staff Dashboard';
 ?>
 <!DOCTYPE html>
 <html class="light" lang="sw">
@@ -26,12 +28,11 @@ $page_title = $page_title ?? 'Admin Dashboard';
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
     
-    <!-- Leaflet CSS for Map -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
     <!-- Chart.js for Charts -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     
     <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
@@ -43,10 +44,6 @@ $page_title = $page_title ?? 'Admin Dashboard';
             font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
             display: inline-block;
             vertical-align: middle;
-        }
-        .leaflet-container {
-            border-radius: 0.75rem;
-            z-index: 1;
         }
     </style>
     
@@ -72,4 +69,4 @@ $page_title = $page_title ?? 'Admin Dashboard';
 </head>
 <body class="bg-surface text-on-surface">
 
-<?php require_once __DIR__ . '/admin-sidebar.php'; ?>
+<?php require_once __DIR__ . '/staff-sidebar.php'; ?>

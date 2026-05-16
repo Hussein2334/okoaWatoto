@@ -3,10 +3,13 @@
 require_once 'config/database.php';
 
 if (isLoggedIn()) {
-    if ($_SESSION['user_role'] === 'admin' || $_SESSION['user_role'] === 'staff') {
+    // Redirect based on role
+    if ($_SESSION['user_role'] === 'admin') {
         header("Location: admin/dashboard.php");
+    } elseif ($_SESSION['user_role'] === 'staff') {
+        header("Location: staff/dashboard.php");
     } else {
-        header("Location: index.php");
+        header("Location: user/dashboard.php");
     }
     exit();
 }
@@ -26,6 +29,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $user = $stmt->fetch();
         
         if ($user && password_verify($password, $user['password'])) {
+            // Update last login and IP
+            $updateStmt = $pdo->prepare("UPDATE users SET last_login = NOW(), last_ip = ? WHERE id = ?");
+            $updateStmt->execute([$_SERVER['REMOTE_ADDR'], $user['id']]);
+            
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['user_name'] = $user['fullname'];
             $_SESSION['user_email'] = $user['email'];
@@ -42,17 +49,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
             }
             
-            $success = "Login successful! Redirecting...";
-            
-            // Store user info for SweetAlert
-            $_SESSION['swal_success'] = true;
-            $_SESSION['swal_user_name'] = $user['fullname'];
-            $_SESSION['swal_user_role'] = $user['role'];
-            
-            if ($user['role'] === 'admin' || $user['role'] === 'staff') {
+            // Redirect based on role
+            if ($user['role'] === 'admin') {
                 header("Location: admin/dashboard.php");
+            } elseif ($user['role'] === 'staff') {
+                header("Location: staff/dashboard.php");
             } else {
-                header("Location: index.php");
+                header("Location: user/dashboard.php");
             }
             exit();
         } else {
@@ -199,7 +202,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <footer class="w-full px-4 md:px-12 py-6 grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-gray-200 bg-gray-50">
     <div>
         <div class="font-bold text-xl text-[#002045] mb-1">OkoaWatoto</div>
-        <p class="text-xs text-[#43474e]">© 2024 Jamhuri ya Muungano wa Tanzania. Huduma ya Umma.</p>
+        <p class="text-xs text-[#43474e]">© 2026 Jamhuri ya Muungano wa Tanzania. Huduma ya Umma.</p>
     </div>
     <div class="flex flex-wrap gap-4 items-start md:justify-end">
         <a href="tel:112" class="text-xs text-[#43474e] hover:text-[#002045] underline">Msaada: 112</a>

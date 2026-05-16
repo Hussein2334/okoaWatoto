@@ -367,7 +367,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <footer class="w-full px-margin-mobile md:px-margin-desktop py-lg grid grid-cols-1 md:grid-cols-2 gap-gutter border-t border-outline-variant bg-surface-container-highest">
     <div>
         <div class="font-headline-md text-headline-md font-bold text-primary mb-sm">OkoaWatoto</div>
-        <p class="font-swahili-alt text-swahili-alt text-on-surface-variant">© 2024 Jamhuri ya Muungano wa Tanzania. Huduma ya Umma.</p>
+        <p class="font-swahili-alt text-swahili-alt text-on-surface-variant">© 2026 Jamhuri ya Muungano wa Tanzania. Huduma ya Umma.</p>
     </div>
     <div class="flex flex-wrap gap-md md:justify-end items-center">
         <a class="font-swahili-alt text-swahili-alt text-on-surface-variant hover:text-primary transition-colors underline" href="tel:112">Msaada: 112</a>

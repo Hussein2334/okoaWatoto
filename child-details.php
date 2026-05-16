@@ -14,7 +14,16 @@ if ($child_id <= 0) {
 
 // Fetch child details based on type
 if ($type == 'missing') {
-    $stmt = $pdo->prepare("SELECT * FROM children_reports WHERE id = ?");
+    $stmt = $pdo->prepare("SELECT 
+        cr.*, 
+        r.region_name,
+        d.district_name,
+        ps.station_name as police_station
+        FROM children_reports cr
+        LEFT JOIN regions r ON cr.region_id = r.id
+        LEFT JOIN districts d ON cr.district_id = d.id
+        LEFT JOIN police_stations ps ON cr.police_station_id = ps.id
+        WHERE cr.id = ?");
     $stmt->execute([$child_id]);
     $child = $stmt->fetch();
     
@@ -23,32 +32,16 @@ if ($type == 'missing') {
         exit();
     }
     
-    // Get region and district names
-    $region_name = '';
-    $district_name = '';
-    if (!empty($child['region_id'])) {
-        $stmt_region = $pdo->prepare("SELECT region_name FROM regions WHERE id = ?");
-        $stmt_region->execute([$child['region_id']]);
-        $region = $stmt_region->fetch();
-        $region_name = $region['region_name'] ?? '';
-    }
-    if (!empty($child['district_id'])) {
-        $stmt_district = $pdo->prepare("SELECT district_name FROM districts WHERE id = ?");
-        $stmt_district->execute([$child['district_id']]);
-        $district = $stmt_district->fetch();
-        $district_name = $district['district_name'] ?? '';
-    }
-    
-    // Get police station name
-    $police_station_name = '';
-    if (!empty($child['police_station_id'])) {
-        $stmt_police = $pdo->prepare("SELECT station_name FROM police_stations WHERE id = ?");
-        $stmt_police->execute([$child['police_station_id']]);
-        $police = $stmt_police->fetch();
-        $police_station_name = $police['station_name'] ?? '';
-    }
+    // Get similar cases
+    $stmt_similar = $pdo->prepare("SELECT id, child_name, age, gender, photo, case_number, status, last_seen_location 
+                                   FROM children_reports 
+                                   WHERE id != ? AND status = 'Missing'
+                                   ORDER BY created_at DESC LIMIT 3");
+    $stmt_similar->execute([$child_id]);
+    $similar_cases = $stmt_similar->fetchAll();
     
 } else {
+    // Found report
     $stmt = $pdo->prepare("SELECT * FROM found_reports WHERE id = ?");
     $stmt->execute([$child_id]);
     $child = $stmt->fetch();
@@ -58,71 +51,78 @@ if ($type == 'missing') {
         exit();
     }
     
-    // Get region and district names for found reports
-    $region_name = '';
-    $district_name = '';
-    if (!empty($child['region_id'])) {
-        $stmt_region = $pdo->prepare("SELECT region_name FROM regions WHERE id = ?");
-        $stmt_region->execute([$child['region_id']]);
-        $region = $stmt_region->fetch();
-        $region_name = $region['region_name'] ?? '';
-    }
-    if (!empty($child['district_id'])) {
-        $stmt_district = $pdo->prepare("SELECT district_name FROM districts WHERE id = ?");
-        $stmt_district->execute([$child['district_id']]);
-        $district = $stmt_district->fetch();
-        $district_name = $district['district_name'] ?? '';
+    $similar_cases = [];
+}
+
+// Helper function to get status color
+function getStatusColor($status, $type) {
+    if ($type == 'missing') {
+        return match($status) {
+            'Missing' => 'bg-red-50 border-red-200 text-red-700',
+            'Found' => 'bg-yellow-50 border-yellow-200 text-yellow-700',
+            'Reunited' => 'bg-green-50 border-green-200 text-green-700',
+            default => 'bg-gray-50 border-gray-200'
+        };
+    } else {
+        return match($status) {
+            'Safe' => 'bg-green-50 border-green-200 text-green-700',
+            'Injured' => 'bg-yellow-50 border-yellow-200 text-yellow-700',
+            'In Danger' => 'bg-red-50 border-red-200 text-red-700',
+            'Awaiting ID' => 'bg-yellow-50 border-yellow-200 text-yellow-700',
+            'Reunited' => 'bg-green-50 border-green-200 text-green-700',
+            default => 'bg-gray-50 border-gray-200'
+        };
     }
 }
 
-// Get similar cases (other missing children in same region)
-$similar_cases = [];
-if ($type == 'missing' && !empty($child['region_id'])) {
-    $stmt_similar = $pdo->prepare("SELECT id, child_name, age, gender, photo, case_number, status, last_seen_location 
-                                   FROM children_reports 
-                                   WHERE region_id = ? AND id != ? AND status = 'Missing'
-                                   ORDER BY created_at DESC LIMIT 3");
-    $stmt_similar->execute([$child['region_id'], $child_id]);
-    $similar_cases = $stmt_similar->fetchAll();
+function getStatusIcon($status, $type) {
+    if ($type == 'missing') {
+        return match($status) {
+            'Missing' => 'warning',
+            'Found' => 'help',
+            'Reunited' => 'check_circle',
+            default => 'info'
+        };
+    } else {
+        return match($status) {
+            'Safe' => 'check_circle',
+            'Injured' => 'healing',
+            'In Danger' => 'warning',
+            'Awaiting ID' => 'help',
+            'Reunited' => 'check_circle',
+            default => 'info'
+        };
+    }
 }
 ?>
 
 <!-- Back Button -->
 <div class="max-w-6xl mx-auto px-4 md:px-8 pt-6">
-    <a href="children.php" class="inline-flex items-center gap-2 text-[#002045] hover:underline">
+    <a href="javascript:history.back()" class="inline-flex items-center gap-2 text-[#002045] hover:underline">
         <span class="material-symbols-outlined">arrow_back</span>
-        Back to Children Registry
+        Back
     </a>
 </div>
 
 <div class="max-w-6xl mx-auto px-4 md:px-8 py-6">
     <!-- Status Banner -->
-    <div class="mb-6 p-4 rounded-lg <?php 
-        echo match($child['status'] ?? $child['health_status'] ?? '') {
-            'Missing' => 'bg-red-50 border border-red-200 text-red-700',
-            'Found', 'Awaiting ID' => 'bg-yellow-50 border border-yellow-200 text-yellow-700',
-            'Reunited' => 'bg-green-50 border border-green-200 text-green-700',
-            default => 'bg-gray-50 border border-gray-200'
-        };
-    ?>">
+    <div class="mb-6 p-4 rounded-lg <?php echo getStatusColor($child['status'] ?? $child['health_status'] ?? '', $type); ?>">
         <div class="flex items-center gap-3">
             <span class="material-symbols-outlined">
-                <?php 
-                echo match($child['status'] ?? $child['health_status'] ?? '') {
-                    'Missing' => 'warning',
-                    'Found', 'Awaiting ID' => 'help',
-                    'Reunited' => 'check_circle',
-                    default => 'info'
-                };
-                ?>
+                <?php echo getStatusIcon($child['status'] ?? $child['health_status'] ?? '', $type); ?>
             </span>
             <div>
                 <span class="font-bold">
-                    Case Status: <?php echo $child['status'] ?? $child['health_status'] ?? 'Active'; ?>
+                    Case Status: <?php echo $type == 'missing' ? $child['status'] : ($child['status'] ?? $child['health_status'] ?? 'Active'); ?>
                 </span>
                 <p class="text-sm">
                     Case Number: <?php echo htmlspecialchars($child['case_number']); ?>
                 </p>
+                <?php if($type == 'found' && !empty($child['current_location'])): ?>
+                <p class="text-sm mt-1">
+                    📍 Currently at: <?php echo htmlspecialchars($child['current_location']); ?>
+                </p>
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -144,22 +144,29 @@ if ($type == 'missing' && !empty($child['region_id'])) {
                     <?php endif; ?>
                 </div>
                 
-                <!-- Status Badge -->
                 <div class="p-4 border-t border-gray-200 bg-gray-50">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-gray-500">Case #:</span>
-                        <span class="font-mono text-sm font-bold"><?php echo htmlspecialchars($child['case_number']); ?></span>
+                    <div class="space-y-2">
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-500">Case #:</span>
+                            <span class="font-mono text-sm font-bold"><?php echo htmlspecialchars($child['case_number']); ?></span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-500">Reported:</span>
+                            <span class="text-sm"><?php echo date('d M Y, H:i', strtotime($child['created_at'])); ?></span>
+                        </div>
+                        <?php if($type == 'found' && !empty($child['finder_name'])): ?>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-500">Found by:</span>
+                            <span class="text-sm"><?php echo htmlspecialchars($child['finder_name']); ?></span>
+                        </div>
+                        <?php endif; ?>
+                        <?php if($type == 'found' && !empty($child['finder_phone'])): ?>
+                        <div class="flex justify-between">
+                            <span class="text-sm text-gray-500">Finder Phone:</span>
+                            <span class="text-sm"><?php echo htmlspecialchars($child['finder_phone']); ?></span>
+                        </div>
+                        <?php endif; ?>
                     </div>
-                    <div class="flex justify-between items-center mt-2">
-                        <span class="text-sm text-gray-500">Reported:</span>
-                        <span class="text-sm"><?php echo date('d M Y, H:i', strtotime($child['created_at'])); ?></span>
-                    </div>
-                    <?php if(isset($child['updated_at']) && $child['updated_at'] != $child['created_at']): ?>
-                    <div class="flex justify-between items-center mt-2">
-                        <span class="text-sm text-gray-500">Last Updated:</span>
-                        <span class="text-sm"><?php echo date('d M Y, H:i', strtotime($child['updated_at'])); ?></span>
-                    </div>
-                    <?php endif; ?>
                 </div>
                 
                 <!-- Action Buttons -->
@@ -181,15 +188,14 @@ if ($type == 'missing' && !empty($child['region_id'])) {
         <!-- Right Column - Details -->
         <div class="lg:col-span-2">
             <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
-                <!-- Header -->
                 <div class="p-6 border-b border-gray-200 bg-gradient-to-r from-[#002045]/5 to-transparent">
                     <h1 class="text-2xl md:text-3xl font-bold text-[#002045]">
-                        <?php echo htmlspecialchars($child['child_name'] ?? $child['found_child_name'] ?? 'Unknown Child'); ?>
+                        <?php echo htmlspecialchars($type == 'missing' ? ($child['child_name'] ?? 'Unknown Child') : ($child['found_child_name'] ?? 'Unknown Child')); ?>
                     </h1>
                     <div class="flex flex-wrap gap-4 mt-2 text-gray-600">
                         <span class="flex items-center gap-1">
                             <span class="material-symbols-outlined text-sm">cake</span>
-                            Age: <?php echo $child['age'] ?? $child['approximate_age'] ?? 'Unknown'; ?> years
+                            Age: <?php echo $type == 'missing' ? ($child['age'] ?? 'Unknown') : ($child['approximate_age'] ?? 'Unknown'); ?> years
                         </span>
                         <span class="flex items-center gap-1">
                             <span class="material-symbols-outlined text-sm">wc</span>
@@ -210,8 +216,8 @@ if ($type == 'missing' && !empty($child['region_id'])) {
                     </div>
                     <?php endif; ?>
                     
-                    <!-- Clothing -->
-                    <?php if(!empty($child['clothing'])): ?>
+                    <!-- Clothing (Only for missing) -->
+                    <?php if($type == 'missing' && !empty($child['clothing'])): ?>
                     <div>
                         <h2 class="text-lg font-bold text-[#002045] mb-3 flex items-center gap-2">
                             <span class="material-symbols-outlined">checkroom</span>
@@ -225,57 +231,57 @@ if ($type == 'missing' && !empty($child['region_id'])) {
                     <div>
                         <h2 class="text-lg font-bold text-[#002045] mb-3 flex items-center gap-2">
                             <span class="material-symbols-outlined">location_on</span>
-                            <?php echo isset($child['last_seen_location']) ? 'Last Seen Location' : 'Found Location'; ?>
+                            <?php echo $type == 'missing' ? 'Last Seen Location' : 'Found Location'; ?>
                         </h2>
                         <div class="bg-gray-50 p-4 rounded-lg space-y-2">
                             <p class="text-gray-700">
-                                <strong>Area:</strong> <?php echo htmlspecialchars($child['last_seen_location'] ?? $child['found_location'] ?? 'Unknown'); ?>
+                                <strong>Location:</strong> <?php echo htmlspecialchars($type == 'missing' ? $child['last_seen_location'] : $child['found_location']); ?>
                             </p>
-                            <?php if($region_name): ?>
-                            <p class="text-gray-700">
-                                <strong>Region:</strong> <?php echo htmlspecialchars($region_name); ?>
-                            </p>
-                            <?php endif; ?>
-                            <?php if($district_name): ?>
-                            <p class="text-gray-700">
-                                <strong>District:</strong> <?php echo htmlspecialchars($district_name); ?>
-                            </p>
-                            <?php endif; ?>
-                            <?php if(isset($child['last_seen_date']) && $child['last_seen_date'] && $child['last_seen_date'] != '0000-00-00 00:00:00'): ?>
+                            <?php if($type == 'missing' && !empty($child['last_seen_date'])): ?>
                             <p class="text-gray-700">
                                 <strong>Date & Time:</strong> <?php echo date('F d, Y H:i', strtotime($child['last_seen_date'])); ?>
                             </p>
                             <?php endif; ?>
+                            <?php if($type == 'found' && !empty($child['found_date'])): ?>
+                            <p class="text-gray-700">
+                                <strong>Date Found:</strong> <?php echo date('F d, Y H:i', strtotime($child['found_date'])); ?>
+                            </p>
+                            <?php endif; ?>
                         </div>
                     </div>
                     
-                    <!-- Reporter Information -->
-                    <?php if(isset($child['reporter_name']) && !empty($child['reporter_name'])): ?>
+                    <!-- Reporter/Finder Information -->
                     <div>
                         <h2 class="text-lg font-bold text-[#002045] mb-3 flex items-center gap-2">
                             <span class="material-symbols-outlined">contact_support</span>
-                            Report Information
+                            <?php echo $type == 'missing' ? 'Report Information' : 'Finder Information'; ?>
                         </h2>
                         <div class="bg-gray-50 p-4 rounded-lg space-y-2">
-                            <p><strong>Reported by:</strong> <?php echo htmlspecialchars($child['reporter_name']); ?></p>
-                            <p><strong>Phone:</strong> <?php echo htmlspecialchars($child['reporter_phone']); ?></p>
-                            <?php if(!empty($child['reporter_email'])): ?>
-                            <p><strong>Email:</strong> <?php echo htmlspecialchars($child['reporter_email']); ?></p>
+                            <?php if($type == 'missing'): ?>
+                                <p><strong>Reported by:</strong> <?php echo htmlspecialchars($child['reporter_name']); ?></p>
+                                <p><strong>Phone:</strong> <?php echo htmlspecialchars($child['reporter_phone']); ?></p>
+                                <?php if(!empty($child['reporter_email'])): ?>
+                                <p><strong>Email:</strong> <?php echo htmlspecialchars($child['reporter_email']); ?></p>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <p><strong>Found by:</strong> <?php echo htmlspecialchars($child['finder_name']); ?></p>
+                                <p><strong>Phone:</strong> <?php echo htmlspecialchars($child['finder_phone']); ?></p>
+                                <?php if(!empty($child['finder_email'])): ?>
+                                <p><strong>Email:</strong> <?php echo htmlspecialchars($child['finder_email']); ?></p>
+                                <?php endif; ?>
                             <?php endif; ?>
-                            <p><strong>Reporter Type:</strong> <?php echo htmlspecialchars($child['reporter_type'] ?? 'Not specified'); ?></p>
                         </div>
                     </div>
-                    <?php endif; ?>
                     
-                    <!-- Police Station -->
-                    <?php if(!empty($police_station_name)): ?>
+                    <!-- Police Station (for missing) -->
+                    <?php if($type == 'missing' && !empty($child['police_station'])): ?>
                     <div>
                         <h2 class="text-lg font-bold text-[#002045] mb-3 flex items-center gap-2">
                             <span class="material-symbols-outlined">local_police</span>
-                            Police Station / Kituo cha Polisi
+                            Police Station
                         </h2>
                         <div class="bg-gray-50 p-4 rounded-lg">
-                            <p><?php echo htmlspecialchars($police_station_name); ?></p>
+                            <p><?php echo htmlspecialchars($child['police_station']); ?></p>
                         </div>
                     </div>
                     <?php endif; ?>
@@ -301,12 +307,12 @@ if ($type == 'missing' && !empty($child['region_id'])) {
         </div>
     </div>
     
-    <!-- Similar Cases Section -->
-    <?php if(!empty($similar_cases)): ?>
+    <!-- Similar Cases (Only for missing) -->
+    <?php if($type == 'missing' && !empty($similar_cases)): ?>
     <div class="mt-12">
         <h2 class="text-xl font-bold text-[#002045] mb-4 flex items-center gap-2">
             <span class="material-symbols-outlined">people</span>
-            Other Missing Children in Same Region
+            Other Missing Children
         </h2>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <?php foreach($similar_cases as $similar): ?>
@@ -335,16 +341,13 @@ if ($type == 'missing' && !empty($child['region_id'])) {
 <script>
     function shareCase() {
         const url = window.location.href;
-        const text = "Please help find this missing child. View details here: ";
-        
         if (navigator.share) {
             navigator.share({
                 title: 'Missing Child Alert',
-                text: text,
+                text: 'Please help find this missing child',
                 url: url
             }).catch(console.log);
         } else {
-            // Fallback - copy to clipboard
             navigator.clipboard.writeText(url);
             alert("Link copied to clipboard! You can share it now.");
         }

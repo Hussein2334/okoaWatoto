@@ -19,7 +19,9 @@ try {
 }
 
 // Include logger
-require_once __DIR__ . '/../includes/logger.php';
+if (file_exists(__DIR__ . '/../includes/logger.php')) {
+    require_once __DIR__ . '/../includes/logger.php';
+}
 
 // Helper functions
 function isLoggedIn() {
@@ -31,7 +33,37 @@ function isAdmin() {
 }
 
 function isStaff() {
+    return isset($_SESSION['user_role']) && ($_SESSION['user_role'] === 'staff');
+}
+
+function isAdminOrStaff() {
     return isset($_SESSION['user_role']) && ($_SESSION['user_role'] === 'admin' || $_SESSION['user_role'] === 'staff');
+}
+
+// Redirect if not logged in
+function requireLogin() {
+    if (!isLoggedIn()) {
+        header("Location: /okoaWatoto/login.php");
+        exit();
+    }
+}
+
+// Redirect if not admin
+function requireAdmin() {
+    requireLogin();
+    if (!isAdmin()) {
+        header("Location: /okoaWatoto/index.php");
+        exit();
+    }
+}
+
+// Redirect if not staff
+function requireStaff() {
+    requireLogin();
+    if (!isStaff()) {
+        header("Location: /okoaWatoto/index.php");
+        exit();
+    }
 }
 
 function generateCaseNumber($prefix = 'CASE') {

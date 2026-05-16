@@ -5,6 +5,18 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 $current_page = basename($_SERVER['PHP_SELF']);
+
+// Determine dashboard link based on user role
+$dashboard_link = '';
+if (isset($_SESSION['user_role'])) {
+    if ($_SESSION['user_role'] === 'admin') {
+        $dashboard_link = 'admin/dashboard.php';
+    } elseif ($_SESSION['user_role'] === 'staff') {
+        $dashboard_link = 'staff/dashboard.php';
+    } elseif ($_SESSION['user_role'] === 'user') {
+        $dashboard_link = 'user/dashboard.php';
+    }
+}
 ?>
 <!DOCTYPE html>
 <html class="light" lang="sw">
@@ -25,7 +37,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
 </head>
 <body class="bg-white text-[#181c1e] min-h-screen flex flex-col">
 
-<!-- URGENT BANNER - Moja tu -->
+<!-- URGENT BANNER -->
 <div class="bg-[#002045] text-white w-full py-2 px-4 md:px-12 flex items-center justify-center gap-2 text-sm z-50">
     <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">info</span>
     <span>For immediate emergencies, call Police toll-free: <strong>112</strong> / Kwa dharura, piga: <strong>112</strong></span>
@@ -48,7 +60,10 @@ $current_page = basename($_SERVER['PHP_SELF']);
             Found Child
         </a>
         <?php if(function_exists('isLoggedIn') && isLoggedIn()): ?>
-            <a href="admin/dashboard.php" class="text-[#0a6c44] text-sm font-bold">Dashboard</a>
+            <!-- Dynamic Dashboard Link based on role -->
+            <?php if($dashboard_link): ?>
+            <a href="<?php echo $dashboard_link; ?>" class="text-[#0a6c44] text-sm font-bold">Dashboard</a>
+            <?php endif; ?>
             <a href="logout.php" class="text-red-600 text-sm">Logout</a>
         <?php else: ?>
             <a href="login.php" class="text-[#0a6c44] text-sm">Login</a>
@@ -79,7 +94,9 @@ $current_page = basename($_SERVER['PHP_SELF']);
             <a href="report-found.php" class="py-2 px-3 hover:bg-gray-100 rounded">Found Child</a>
             <div class="border-t my-2 pt-2">
                 <?php if(function_exists('isLoggedIn') && isLoggedIn()): ?>
-                    <span class="py-2 px-3 text-[#0a6c44] block"><?php echo $_SESSION['user_name'] ?? 'User'; ?></span>
+                    <?php if($dashboard_link): ?>
+                    <a href="<?php echo $dashboard_link; ?>" class="py-2 px-3 text-[#0a6c44] hover:bg-gray-100 rounded block">Dashboard</a>
+                    <?php endif; ?>
                     <a href="logout.php" class="py-2 px-3 text-red-600 hover:bg-gray-100 rounded block">Logout</a>
                 <?php else: ?>
                     <a href="login.php" class="py-2 px-3 hover:bg-gray-100 rounded block">Login</a>

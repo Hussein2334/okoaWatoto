@@ -1,8 +1,11 @@
 <?php
 // report-found.php
 $page_title = 'Report Found Child';
+
+// Start output buffering
+ob_start();
+
 require_once 'config/database.php';
-require_once 'includes/header.php';
 
 $error = '';
 $success = '';
@@ -73,12 +76,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 );
             }
             
-            $_SESSION['success_message'] = "Found report submitted! Case Number: $case_number. Police will contact you.";
-            
             // Store data for SweetAlert
             $_SESSION['swal_found_success'] = true;
             $_SESSION['swal_case_number'] = $case_number;
             
+            // Clear buffer and redirect
+            ob_end_clean();
             header("Location: report-found.php");
             exit();
         } else {
@@ -104,6 +107,10 @@ if (isset($_SESSION['swal_found_success'])) {
     unset($_SESSION['swal_found_success']);
     unset($_SESSION['swal_case_number']);
 }
+
+// Clear buffer and include header
+ob_end_clean();
+require_once 'includes/header.php';
 ?>
 
 <div class="max-w-3xl mx-auto px-4 py-8">

@@ -6,7 +6,7 @@
 <footer class="w-full px-4 md:px-12 py-8 grid grid-cols-1 md:grid-cols-2 gap-4 border-t border-[#c4c6cf] bg-gray-100 mt-auto">
     <div>
         <div class="font-bold text-2xl text-[#002045] mb-2">OkoaWatoto</div>
-        <p class="text-sm text-[#43474e]">© 2024 Jamhuri ya Muungano wa Tanzania. Huduma ya Umma.</p>
+        <p class="text-sm text-[#43474e]">© 2026 Jamhuri ya Muungano wa Tanzania. Huduma ya Umma.</p>
     </div>
     <div class="flex flex-wrap gap-6 items-start md:justify-end">
         <a href="tel:112" class="text-[#43474e] text-sm hover:text-[#002045] underline">Msaada: 112</a>
