@@ -8,7 +8,7 @@ $current_page = basename($_SERVER['PHP_SELF']);
         <button id="sidebarToggle" class="md:hidden text-primary p-2">
             <span class="material-symbols-outlined">menu</span>
         </button>
-        <a href="../dashboard.php" class="font-bold text-2xl text-primary">OkoaWatoto Staff</a>
+        <a href="../dashboard.php" class="font-bold text-2xl text-primary">OkoaWatoto User</a>
         <nav class="hidden md:flex gap-2">
             <a href="../index.php" class="text-gray-600 text-sm hover:bg-gray-100 px-3 py-2 rounded-lg transition-colors">
                 <span class="material-symbols-outlined text-sm">home</span> Home
@@ -18,8 +18,8 @@ $current_page = basename($_SERVER['PHP_SELF']);
     <div class="flex items-center gap-3">
         <div class="flex items-center gap-2 px-3 py-2 rounded-full border border-gray-200 bg-white">
             <span class="material-symbols-outlined text-primary">account_circle</span>
-            <span class="text-sm font-semibold"><?php echo strtoupper($_SESSION['user_name'] ?? 'Staff'); ?></span>
-            <span class="text-xs text-gray-500">(Staff)</span>
+            <span class="text-sm font-semibold"><?php echo strtoupper($_SESSION['user_name'] ?? 'User'); ?></span>
+            <span class="text-xs text-gray-500">(User)</span>
             <!-- Logout button with SweetAlert -->
             <a href="#" class="ml-2 text-red-600 hover:bg-red-50 p-1 rounded-lg transition-colors" id="logoutBtn">
                 <span class="material-symbols-outlined text-sm">logout</span>
