@@ -15,7 +15,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fullname = trim($_POST['fullname'] ?? '');
     $email = trim($_POST['email'] ?? '');
     $phone = trim($_POST['phone'] ?? '');
-    $account_type = $_POST['account_type'] ?? 'citizen';
     $password = $_POST['password'] ?? '';
     $confirm_password = $_POST['confirm_password'] ?? '';
     
@@ -43,13 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($stmt->fetch()) {
                 $error = "Namba ya simu tayari imesajiliwa / Phone already registered";
             } else {
-                // Determine role based on account type
+                // Default role: user
                 $role = 'user';
-                if ($account_type === 'police') {
-                    $role = 'staff';
-                } elseif ($account_type === 'volunteer') {
-                    $role = 'user';
-                }
                 
                 // Hash password and insert user
                 $hashed_password = password_hash($password, PASSWORD_DEFAULT);
@@ -229,6 +223,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
             
             <form method="POST" action="" id="registerForm" class="space-y-gutter">
+                <!-- Hidden account type - default citizen -->
+                <input type="hidden" name="account_type" value="citizen">
+                
                 <!-- Progress indicator -->
                 <div class="flex gap-xs mb-md">
                     <div class="h-1 flex-grow bg-primary rounded-full"></div>
@@ -281,28 +278,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                                type="tel"
                                value="<?php echo htmlspecialchars($phone); ?>"
                                required/>
-                    </div>
-                </div>
-                
-                <!-- Account Type -->
-                <div class="space-y-base">
-                    <label class="font-label-caps text-label-caps text-on-surface-variant uppercase">Aina ya Akaunti</label>
-                    <div class="grid grid-cols-3 gap-xs">
-                        <label class="relative flex flex-col items-center justify-center p-sm border border-outline-variant rounded-lg cursor-pointer hover:bg-surface-container-low transition-colors has-[:checked]:bg-secondary-container has-[:checked]:border-secondary">
-                            <input class="sr-only" name="account_type" type="radio" value="citizen" <?php echo (!isset($_POST['account_type']) || $_POST['account_type'] == 'citizen') ? 'checked' : ''; ?>/>
-                            <span class="material-symbols-outlined text-primary mb-xs">person</span>
-                            <span class="font-label-caps text-label-caps text-center">Mwananchi</span>
-                        </label>
-                        <label class="relative flex flex-col items-center justify-center p-sm border border-outline-variant rounded-lg cursor-pointer hover:bg-surface-container-low transition-colors has-[:checked]:bg-secondary-container has-[:checked]:border-secondary">
-                            <input class="sr-only" name="account_type" type="radio" value="volunteer" <?php echo (isset($_POST['account_type']) && $_POST['account_type'] == 'volunteer') ? 'checked' : ''; ?>/>
-                            <span class="material-symbols-outlined text-primary mb-xs">volunteer_activism</span>
-                            <span class="font-label-caps text-label-caps text-center">Mjitoleaji</span>
-                        </label>
-                        <label class="relative flex flex-col items-center justify-center p-sm border border-outline-variant rounded-lg cursor-pointer hover:bg-surface-container-low transition-colors has-[:checked]:bg-secondary-container has-[:checked]:border-secondary">
-                            <input class="sr-only" name="account_type" type="radio" value="police" <?php echo (isset($_POST['account_type']) && $_POST['account_type'] == 'police') ? 'checked' : ''; ?>/>
-                            <span class="material-symbols-outlined text-primary mb-xs">policy</span>
-                            <span class="font-label-caps text-label-caps text-center">Polisi</span>
-                        </label>
                     </div>
                 </div>
                 
